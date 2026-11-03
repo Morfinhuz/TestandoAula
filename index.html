@@ -1,1 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guia Visual de Redes · Automação 4.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* pequenos ajustes para transições suaves e estados */
+        .card-hover {
+            transition: all 0.2s ease-in-out;
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            border-color: #22d3ee;
+            box-shadow: 0 10px 25px -5px rgba(34, 211, 238, 0.2);
+        }
+        .card-active {
+            border-color: #22d3ee !important;
+            box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.4);
+        }
+        .panel-enter {
+            transition: opacity 0.3s ease, transform 0.2s ease;
+        }
+        .tab-active {
+            background-color: #0f172a;
+            border-bottom-color: #22d3ee;
+            color: #22d3ee;
+        }
+        /* representação visual de topologia */
+        .topology-line {
+            background-color: #64748b;
+            height: 2px;
+            flex: 1;
+            min-width: 20px;
+        }
+        .topology-node {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 0.75rem;
+            color: #cbd5e1;
+            white-space: nowrap;
+            font-weight: 500;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        }
+        .topology-node.highlight {
+            border-color: #22d3ee;
+            background-color: #0f172a;
+        }
+        .star-center {
+            background-color: #1e293b;
+            border: 2px solid #a855f7;
+            border-radius: 12px;
+            padding: 8px 14px;
+            font-weight: 600;
+            color: #e2e8f0;
+            box-shadow: 0 0 12px rgba(168, 85, 247, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans antialiased">
 
+    <!-- CABEÇALHO -->
+    <header class="border-b border-slate-800 bg-slate-950/80 sticky top-0 backdrop-blur-sm z-20">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <h1 class="text-2xl font-bold tracking-tight text-white">Guia Visual de Redes para Automação</h1>
+                <span class="bg-purple-700/30 text-purple-300 text-xs font-mono px-3 py-1 rounded-full border border-purple-500/50 shadow-[0_0_8px_rgba(168,85,247,0.3)]">Versão v6</span>
+            </div>
+            <div class="text-xs text-slate-400 font-mono">Indústria 4.0 · treinamento técnico</div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <!-- ABAS PRINCIPAIS -->
+        <div class="flex border-b border-slate-800 mb-8 gap-1">
+            <button id="tab-cables" class="tab-btn px-6 py-3 text-base font-semibold text-slate-300 border-b-2 border-transparent transition-colors flex items-center gap-2 hover:text-white">
+                🔌 Meios Físicos (Cabos)
+            </button>
+            <button id="tab-topology" class="tab-btn px-6 py-3 text-base font-semibold text-slate-300 border-b-2 border-transparent transition-colors flex items-center gap-2 hover:text-white">
+                📐 Simulador de Topologia
+            </button>
+        </div>
+
+        <!-- CONTEÚDO ABA 1: CABOS -->
+        <section id="content-cables">
+            <!-- cards superiores -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <!-- Par Trançado -->
+                <div data-cable="par" class="cable-card card-hover bg-slate-800/60 border border-slate-700 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:bg-slate-800">
+                    <span class="text-5xl mb-3">🔗</span>
+                    <h2 class="text-xl font-bold text-white">Par Trançado</h2>
+                </div>
+                <!-- Fibra Óptica -->
+                <div data-cable="fibra" class="cable-card card-hover bg-slate-800/60 border border-slate-700 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:bg-slate-800">
+                    <span class="text-5xl mb-3">💡</span>
+                    <h2 class="text-xl font-bold text-white">Fibra Óptica</h2>
+                </div>
+                <!-- RS-485 -->
+                <div data-cable="rs485" class="cable-card card-hover bg-slate-800/60 border border-slate-700 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:bg-slate-800">
+                    <span class="text-5xl mb-3">🔌</span>
+                    <h2 class="text-xl font-bold text-white">Cabo RS-485</h2>
+                </div>
+            </div>
+
+            <!-- painel de detalhes dinâmico (inicialmente oculto) -->
+            <div id="details-panel" class="hidden bg-slate-800/40 border-2 border-cyan-500/70 rounded-2xl p-6 panel-enter shadow-2xl shadow-cyan-500/10 relative">
+                <!-- botão fechar -->
+                <button id="close-details" class="absolute top-4 right-4 text-slate-400 hover:text-white bg-slate-700/60 hover:bg-slate-600 rounded-full w-8 h-8 flex items-center justify-center transition-colors text-lg font-bold leading-none">✕</button>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                    <!-- coluna esquerda: imagem -->
+                    <div class="rounded-xl overflow-hidden bg-slate-900 border border-slate-700 flex items-center justify-center min-h-[220px]">
+                        <img id="detail-image" src="" alt="Cabo selecionado" class="w-full h-full object-cover max-h-80">
+                    </div>
+                    <!-- coluna direita: dados técnicos -->
+                    <div class="flex flex-col gap-4 pr-2">
+                        <h3 id="detail-title" class="text-2xl font-bold text-white"></h3>
+                        <p id="detail-description" class="text-slate-300 leading-relaxed text-base"></p>
+                        <div id="detail-badges" class="flex flex-wrap gap-2 mt-2"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CONTEÚDO ABA 2: SIMULADOR DE TOPOLOGIA (inicialmente oculto) -->
+        <section id="content-topology" class="hidden">
+            <div class="flex flex-wrap gap-4 mb-8">
+                <button id="btn-bus" class="topology-btn px-8 py-4 bg-slate-800 border border-slate-600 rounded-xl text-lg font-semibold text-white hover:border-cyan-400 hover:bg-slate-700 transition-all flex items-center gap-3">
+                    📏 Layout em Barramento
+                </button>
+                <button id="btn-star" class="topology-btn px-8 py-4 bg-slate-800 border border-slate-600 rounded-xl text-lg font-semibold text-white hover:border-cyan-400 hover:bg-slate-700 transition-all flex items-center gap-3">
+                    ⭐ Layout em Estrela
+                </button>
+            </div>
+
+            <!-- bloco explicativo barramento -->
+            <div id="topology-bus" class="hidden bg-slate-800/40 border border-slate-700 rounded-2xl p-6 mb-6">
+                <h3 class="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-2">📏 Topologia em Barramento (Linear)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="text-emerald-400 font-semibold mb-2 flex items-center gap-1">✅ Vantagens</h4>
+                        <ul class="list-disc list-inside text-slate-300 space-y-1 text-sm">
+                            <li>Baixo custo de cabeamento (um único cabo principal)</li>
+                            <li>Fácil de estender e adicionar novos dispositivos</li>
+                            <li>Ideal para longas distâncias (RS-485)</li>
+                            <li>Simplicidade de instalação e manutenção</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-rose-400 font-semibold mb-2 flex items-center gap-1">⚠️ Desvantagens</h4>
+                        <ul class="list-disc list-inside text-slate-300 space-y-1 text-sm">
+                            <li>Uma falha no cabo principal derruba toda a rede</li>
+                            <li>Colisões de dados em redes com muitos nós</li>
+                            <li>Desempenho cai com o aumento de dispositivos</li>
+                            <li>Difícil diagnóstico em caso de rompimento</li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- representação visual barramento -->
+                <div class="mt-6 bg-slate-900/80 p-5 rounded-xl border border-slate-700">
+                    <p class="text-xs text-slate-400 mb-3 uppercase tracking-wider">Representação visual</p>
+                    <div class="flex items-center justify-center flex-wrap gap-1">
+                        <div class="topology-node highlight">CLP Master</div>
+                        <div class="topology-line"></div>
+                        <div class="topology-node">Inversor 1</div>
+                        <div class="topology-line"></div>
+                        <div class="topology-node">IHM</div>
+                        <div class="topology-line"></div>
+                        <div class="topology-node">Sensor</div>
+                        <div class="topology-line"></div>
+                        <div class="topology-node">Terminador</div>
+                    </div>
+                    <div class="flex justify-center mt-3 text-[10px] text-slate-500 font-mono">↔ barramento RS-485 (A/B) com terminação</div>
+                </div>
+            </div>
+
+            <!-- bloco explicativo estrela -->
+            <div id="topology-star" class="hidden bg-slate-800/40 border border-slate-700 rounded-2xl p-6">
+                <h3 class="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-2">⭐ Topologia em Estrela</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="text-emerald-400 font-semibold mb-2 flex items-center gap-1">✅ Vantagens</h4>
+                        <ul class="list-disc list-inside text-slate-300 space-y-1 text-sm">
+                            <li>Falha em um nó não afeta os demais</li>
+                            <li>Fácil isolamento de problemas e manutenção</li>
+                            <li>Alto desempenho e baixa colisão</li>
+                            <li>Gerenciamento centralizado via switch</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-rose-400 font-semibold mb-2 flex items-center gap-1">⚠️ Desvantagens</h4>
+                        <ul class="list-disc list-inside text-slate-300 space-y-1 text-sm">
+                            <li>Maior custo com switch e cabeamento individual</li>
+                            <li>Dependência do switch central (ponto único de falha)</li>
+                            <li>Distâncias limitadas (100m por cabo)</li>
+                            <li>Mais cabos e infraestrutura física</li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- representação visual estrela -->
+                <div class="mt-6 bg-slate-900/80 p-5 rounded-xl border border-slate-700">
+                    <p class="text-xs text-slate-400 mb-3 uppercase tracking-wider">Representação visual</p>
+                    <div class="flex flex-col items-center gap-2">
+                        <div class="flex justify-center gap-8 mb-1">
+                            <div class="topology-node">Inversor</div>
+                            <div class="topology-node">IHM</div>
+                            <div class="topology-node">Sensor</div>
+                        </div>
+                        <div class="flex justify-center w-full relative">
+                            <div class="star-center">Switch Industrial</div>
+                        </div>
+                        <div class="flex justify-center gap-6 mt-2">
+                            <div class="topology-node">CLP</div>
+                            <div class="topology-node">Supervisório</div>
+                            <div class="topology-node">Remote I/O</div>
+                        </div>
+                    </div>
+                    <div class="flex justify-center mt-4 text-[10px] text-slate-500 font-mono">✧ cada dispositivo conectado individualmente ao switch</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        (function() {
+            // ---------- DADOS DOS CABOS ----------
+            const cabosData = {
+                par: {
+                    titulo: 'Par Trançado',
+                    imagem: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=600&h=400&q=80',
+                    descricao: 'Cabo de rede comum (Ethernet/Profinet). Usado para ligar o CLP ao computador do supervisor, além de conectar switches e IHMs.',
+                    badges: ['Custo: Baixo', 'Flexibilidade: Alta', 'Distância: Máx. 100m']
+                },
+                fibra: {
+                    titulo: 'Fibra Óptica',
+                    imagem: 'https://images.unsplash.com/photo-1601524909162-be87252be298?auto=format&fit=crop&w=600&h=400&q=80',
+                    descricao: 'Cabo de filamentos de vidro. Usado para levar dados a longas distâncias na fábrica e interligar blocos industriais sem sofrer nenhuma interferência eletromagnética de grandes motores.',
+                    badges: ['Imunidade a Ruídos: Excelente', 'Custo: Alto', 'Banda: Gigabit+']
+                },
+                rs485: {
+                    titulo: 'Cabo RS-485',
+                    imagem: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=600&h=400&q=80',
+                    descricao: 'Cabo de dois fios trançados com blindagem malhada (A e B). Padrão físico indispensável na indústria para comunicação serial robusta entre CLPs, inversores de frequência e instrumentos de campo.',
+                    badges: ['Protocolos: Modbus RTU / Profibus DP', 'Distância: até 1200m', 'Topologia: Barramento']
+                }
+            };
+
+            // Elementos
+            const detailsPanel = document.getElementById('details-panel');
+            const closeBtn = document.getElementById('close-details');
+            const detailImage = document.getElementById('detail-image');
+            const detailTitle = document.getElementById('detail-title');
+            const detailDesc = document.getElementById('detail-description');
+            const detailBadges = document.getElementById('detail-badges');
+
+            const cableCards = document.querySelectorAll('.cable-card');
+            const tabCables = document.getElementById('tab-cables');
+            const tabTopology = document.getElementById('tab-topology');
+            const contentCables = document.getElementById('content-cables');
+            const contentTopology = document.getElementById('content-topology');
+
+            // Controle de abas
+            function activateTab(tabId) {
+                // remove classes ativas
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('tab-active', 'text-cyan-400', 'border-cyan-400');
+                    btn.classList.add('text-slate-300', 'border-transparent');
+                });
+                if (tabId === 'cables') {
+                    tabCables.classList.add('tab-active', 'text-cyan-400', 'border-cyan-400');
+                    tabCables.classList.remove('text-slate-300', 'border-transparent');
+                    contentCables.classList.remove('hidden');
+                    contentTopology.classList.add('hidden');
+                } else {
+                    tabTopology.classList.add('tab-active', 'text-cyan-400', 'border-cyan-400');
+                    tabTopology.classList.remove('text-slate-300', 'border-transparent');
+                    contentCables.classList.add('hidden');
+                    contentTopology.classList.remove('hidden');
+                }
+            }
+
+            tabCables.addEventListener('click', () => activateTab('cables'));
+            tabTopology.addEventListener('click', () => activateTab('topology'));
+            // Inicia na aba cabos (padrão)
+            activateTab('cables');
+
+            // ---------- ABA 1: CABOS ----------
+            // Limpa todos os cards ativos
+            function clearActiveCards() {
+                cableCards.forEach(c => c.classList.remove('card-active'));
+            }
+
+            // Mostra painel de detalhes com dados do cabo
+            function showCableDetails(cableKey) {
+                const data = cabosData[cableKey];
+                if (!data) return;
+
+                detailImage.src = data.imagem;
+                detailImage.alt = data.titulo;
+                detailTitle.textContent = data.titulo;
+                detailDesc.textContent = data.descricao;
+
+                // badges
+                detailBadges.innerHTML = '';
+                data.badges.forEach(badgeText => {
+                    const span = document.createElement('span');
+                    span.className = 'bg-cyan-900/40 text-cyan-300 border border-cyan-700/60 text-xs font-medium px-3 py-1.5 rounded-full';
+                    span.textContent = badgeText;
+                    detailBadges.appendChild(span);
+                });
+
+                detailsPanel.classList.remove('hidden');
+            }
+
+            // Fecha painel
+            function closeDetailsPanel() {
+                detailsPanel.classList.add('hidden');
+                clearActiveCards();
+            }
+
+            // Evento de clique nos cards
+            cableCards.forEach(card => {
+                card.addEventListener('click', (e) => {
+                    const cableKey = card.dataset.cable; // 'par', 'fibra', 'rs485'
+                    if (!cableKey) return;
+
+                    // remove destaque anterior
+                    clearActiveCards();
+                    // adiciona destaque ao card atual
+                    card.classList.add('card-active');
+
+                    // mostra detalhes
+                    showCableDetails(cableKey);
+                });
+            });
+
+            // Fechar painel pelo botão X
+            closeBtn.addEventListener('click', closeDetailsPanel);
+
+            // ---------- ABA 2: TOPOLOGIA ----------
+            const btnBus = document.getElementById('btn-bus');
+            const btnStar = document.getElementById('btn-star');
+            const topologyBus = document.getElementById('topology-bus');
+            const topologyStar = document.getElementById('topology-star');
+
+            btnBus.addEventListener('click', () => {
+                topologyBus.classList.remove('hidden');
+                topologyStar.classList.add('hidden');
+                btnBus.classList.add('border-cyan-400', 'bg-slate-700');
+                btnStar.classList.remove('border-cyan-400', 'bg-slate-700');
+            });
+
+            btnStar.addEventListener('click', () => {
+                topologyStar.classList.remove('hidden');
+                topologyBus.classList.add('hidden');
+                btnStar.classList.add('border-cyan-400', 'bg-slate-700');
+                btnBus.classList.remove('border-cyan-400', 'bg-slate-700');
+            });
+
+            // Inicial: nenhum bloco de topologia aberto (ou pode iniciar com barramento? Vamos deixar ocultos)
+            // Mas o ideal é que o usuário clique. Vou deixar ambos ocultos.
+            // Porém, para melhor usabilidade, se quiser já mostrar algo? O enunciado diz "Ao clicar em cada um, exiba...", então iniciam ocultos.
+            // Nada a fazer.
+
+            // Pequeno ajuste: quando clicar em um card e o painel estiver aberto com outro card, atualiza.
+            // Se clicar no mesmo card, mantém aberto? Sem problema, recarrega os mesmos dados.
+
+            // Opcional: se clicar no card já ativo, mantém e não fecha. Comportamento ok.
+
+            // Fechar painel ao trocar de aba (para evitar confusão visual)
+            tabTopology.addEventListener('click', () => {
+                // fecha painel de cabos se estiver aberto (não obrigatório, mas limpa estado)
+                // não vamos fechar automaticamente para não perder contexto, mas é opcional.
+                // Vou manter, pois se o usuário voltar à aba cabos o painel pode estar aberto.
+                // Porém, para manter a integridade, vou deixar como está.
+            });
+
+        })();
+    </script>
+</body>
+</html>
